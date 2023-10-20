@@ -1,0 +1,50 @@
+version: '2.1'
+name: practice-service
+services:
+  databasepractice:
+    image: postgres:latest
+    ports:
+      - "5435:5435"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB:       "saop_prod_practice"
+      POSTGRES_HOST_AUTH_METHOD: trust 
+      PGPORT: 5435
+    networks:
+      backend:
+        aliases:
+          - "database practice"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  configserverpractice:
+    image: saop/configserverpractice:0.0.1-SNAPSHOT
+    ports:
+       - "8074:8074"
+    networks:
+      backend:
+        aliases:
+          - "configserverpractice"
+  practiceservice:
+    image: saop/practiceservice:0.0.2-SNAPSHOT
+    environment:
+      PROFILE: "prod-practice"
+      CONFIGSERVER_URI: "http://configserverpractice:8074"
+      CONFIGSERVER_PORT:   "8074"
+      DATABASESERVER_PORT: "5435"
+    depends_on:
+      databasepractice:
+        condition: service_healthy
+      configserverpractice:
+        condition: service_started
+    ports:
+      - "8083:8083"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
